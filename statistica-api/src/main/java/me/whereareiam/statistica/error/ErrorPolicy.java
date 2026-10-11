@@ -4,12 +4,14 @@ import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Supplier;
 import java.util.regex.Pattern;
 
 /**
@@ -17,7 +19,8 @@ import java.util.regex.Pattern;
  * <p>
  * Only errors of the plugin's own code are reported: those thrown from a class one of the owning
  * class loaders defined. The plugin's class loader always owns; add the loaders of modules the
- * plugin ships separately with {@link Builder#owner(ClassLoader)}. An error thrown from someone
+ * plugin ships separately with {@link Builder#owner(ClassLoader)}, or {@link Builder#owners(Supplier)}
+ * for modules it reloads. An error thrown from someone
  * else's code, such as a third-party extension, is not the plugin's to send.
  *
  * <pre>{@code
@@ -44,6 +47,9 @@ public final class ErrorPolicy {
 	/** Class loaders whose classes are the plugin's own code, besides the plugin's. */
 	private final @NotNull List<ClassLoader> owners;
 
+	/** Asked on every report for further owning class loaders, such as those of reloadable modules. */
+	private final @NotNull Supplier<? extends Collection<ClassLoader>> ownerSource;
+
 	/** Attributes sent with every error, each a text, a number or a boolean. */
 	private final @NotNull Map<String, Object> attributes;
 
@@ -58,6 +64,7 @@ public final class ErrorPolicy {
 		this.ignoredMessages = List.copyOf(builder.ignoredMessages);
 		this.scrubs = List.copyOf(builder.scrubs);
 		this.owners = List.copyOf(builder.owners);
+		this.ownerSource = builder.ownerSource;
 		this.attributes = Map.copyOf(builder.attributes);
 		this.captureUncaught = builder.captureUncaught;
 		this.limit = builder.limit;
@@ -90,6 +97,7 @@ public final class ErrorPolicy {
 		private final List<Pattern> ignoredMessages = new ArrayList<>();
 		private final List<Scrub> scrubs = new ArrayList<>(Scrub.defaults());
 		private final List<ClassLoader> owners = new ArrayList<>();
+		private Supplier<? extends Collection<ClassLoader>> ownerSource = List::of;
 		private final Map<String, Object> attributes = new LinkedHashMap<>();
 		private boolean captureUncaught = true;
 		private int limit = DEFAULT_LIMIT;
@@ -149,6 +157,18 @@ public final class ErrorPolicy {
 		 */
 		public @NotNull Builder owner(@NotNull ClassLoader loader) {
 			owners.add(Objects.requireNonNull(loader, "loader"));
+			return this;
+		}
+
+		/**
+		 * Asks for further owning class loaders on every report, for modules the plugin loads and
+		 * reloads at runtime. Replaces an earlier source.
+		 *
+		 * @param owners returns the current class loaders of such modules; called from any thread
+		 * @return this builder
+		 */
+		public @NotNull Builder owners(@NotNull Supplier<? extends Collection<ClassLoader>> owners) {
+			this.ownerSource = Objects.requireNonNull(owners, "owners");
 			return this;
 		}
 

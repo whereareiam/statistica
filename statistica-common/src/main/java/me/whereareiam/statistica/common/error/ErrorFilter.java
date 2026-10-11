@@ -6,6 +6,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.LinkedHashSet;
@@ -31,7 +32,7 @@ public final class ErrorFilter {
 	private static final int MAX_CACHED_CLASSES = 2048;
 
 	private final @NotNull ErrorPolicy policy;
-	private final @NotNull Set<ClassLoader> owners;
+	private final @NotNull Set<ClassLoader> fixedOwners;
 	private final @NotNull Map<String, Origin> origins = new ConcurrentHashMap<>();
 	private long windowStart = System.nanoTime();
 	private int reports;
@@ -48,7 +49,7 @@ public final class ErrorFilter {
 		Set<ClassLoader> owners = Collections.newSetFromMap(new IdentityHashMap<>());
 		owners.add(plugin);
 		owners.addAll(policy.getOwners());
-		this.owners = owners;
+		this.fixedOwners = owners;
 	}
 
 	/**
@@ -91,9 +92,10 @@ public final class ErrorFilter {
 		List<Throwable> chain = chain(error);
 		Collections.reverse(chain);
 
+		Set<ClassLoader> owners = owners();
 		for (Throwable current : chain) {
 			for (StackTraceElement frame : current.getStackTrace()) {
-				Origin origin = origin(frame.getClassName());
+				Origin origin = origin(frame.getClassName(), owners);
 				if (origin != Origin.PLATFORM) return origin == Origin.OWNED;
 			}
 		}
@@ -113,17 +115,32 @@ public final class ErrorFilter {
 		return true;
 	}
 
-	private @NotNull Origin origin(@NotNull String className) {
+	private @NotNull Set<ClassLoader> owners() {
+		Collection<ClassLoader> reloadable = policy.getOwnerSource().get();
+		if (reloadable.isEmpty()) return fixedOwners;
+
+		Set<ClassLoader> owners = Collections.newSetFromMap(new IdentityHashMap<>());
+		owners.addAll(fixedOwners);
+		owners.addAll(reloadable);
+
+		return owners;
+	}
+
+	/**
+	 * Class names map to the same origin for the lifetime of the plugin, also when a module is
+	 * reloaded under a new class loader, so origins are kept once resolved.
+	 */
+	private @NotNull Origin origin(@NotNull String className, @NotNull Set<ClassLoader> owners) {
 		Origin cached = origins.get(className);
 		if (cached != null) return cached;
 
-		Origin origin = resolve(className);
+		Origin origin = resolve(className, owners);
 		if (origins.size() < MAX_CACHED_CLASSES) origins.put(className, origin);
 
 		return origin;
 	}
 
-	private @NotNull Origin resolve(@NotNull String className) {
+	private static @NotNull Origin resolve(@NotNull String className, @NotNull Set<ClassLoader> owners) {
 		boolean visible = false;
 		for (ClassLoader owner : owners) {
 			Class<?> type = load(className, owner);

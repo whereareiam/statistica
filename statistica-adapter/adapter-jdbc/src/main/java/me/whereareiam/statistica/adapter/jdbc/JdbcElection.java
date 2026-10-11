@@ -141,13 +141,27 @@ public final class JdbcElection implements Election {
 	}
 
 	/**
-	 * Returns the statement that creates the lease table, for an application whose migrations are not
-	 * Strata streams. The lease row is added by the first election.
+	 * Returns the statement that creates this election's lease table, for an application whose
+	 * migrations are not Strata streams.
 	 *
-	 * @return a {@code CREATE TABLE} statement every supported database runs
+	 * @return the statement of {@link #createTableStatement(String)}
 	 */
 	public @NotNull String createTableStatement() {
-		return "CREATE TABLE " + table + " ("
+		return createTableStatement(table);
+	}
+
+	/**
+	 * Returns the statement that creates a lease table unless it exists, which every supported
+	 * database runs. The lease row is added by the first election.
+	 *
+	 * @param table name of the lease table
+	 * @return a {@code CREATE TABLE IF NOT EXISTS} statement
+	 * @throws IllegalArgumentException if {@code table} is not a plain SQL identifier
+	 */
+	public static @NotNull String createTableStatement(@NotNull String table) {
+		if (!TABLE.matcher(table).matches()) throw new IllegalArgumentException("Invalid table name: " + table);
+
+		return "CREATE TABLE IF NOT EXISTS " + table + " ("
 				+ "id INT NOT NULL PRIMARY KEY, "
 				+ "holder VARCHAR(36) NOT NULL, "
 				+ "expires_at BIGINT NOT NULL)";

@@ -4,7 +4,10 @@ import me.whereareiam.statistica.error.ErrorPolicy;
 import org.junit.jupiter.api.Test;
 
 import java.net.ConnectException;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.sql.SQLException;
+import java.util.List;
 import java.util.regex.Pattern;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -63,6 +66,22 @@ class ErrorFilterTest {
 	}
 
 	@Test
+	void countsReloadableModulesAsOwners() throws Exception {
+		URL classes = ErrorFilterTest.class.getProtectionDomain().getCodeSource().getLocation();
+		RuntimeException error = new RuntimeException();
+		error.setStackTrace(new StackTraceElement[]{frame(Module.class.getName())});
+
+		try (URLClassLoader plugin = new URLClassLoader(new URL[0], null);
+			 URLClassLoader module = new URLClassLoader(new URL[]{classes}, null)) {
+			ErrorFilter withModule = new ErrorFilter(ErrorPolicy.builder().owners(() -> List.of(module)).build(), plugin);
+			ErrorFilter withoutModule = new ErrorFilter(ErrorPolicy.defaults(), plugin);
+
+			assertTrue(withModule.owned(error));
+			assertFalse(withoutModule.owned(error));
+		}
+	}
+
+	@Test
 	void refusesIgnoredTypesAlsoAsCause() {
 		ErrorFilter filter = new ErrorFilter(ErrorPolicy.builder().ignore(ConnectException.class).build(), PLUGIN);
 
@@ -84,6 +103,10 @@ class ErrorFilterTest {
 		assertTrue(filter.accepts(new IllegalStateException()));
 		assertTrue(filter.accepts(new IllegalStateException()));
 		assertFalse(filter.accepts(new IllegalStateException()));
+	}
+
+	/** A class a separately loaded module would define. */
+	static final class Module {
 	}
 
 	private static StackTraceElement frame(String className) {
