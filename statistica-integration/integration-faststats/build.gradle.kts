@@ -8,6 +8,7 @@ dependencies {
     compileOnly(libs.faststats.core)
     compileOnly(libs.gson)
 
+    testImplementation(libs.faststats.config)
     testImplementation(libs.faststats.core)
     testImplementation(libs.gson)
 }

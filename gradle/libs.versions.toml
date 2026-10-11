@@ -24,6 +24,7 @@ bstats-base = { module = "org.bstats:bstats-base", version.ref = "bstats" }
 bstats-velocity = { module = "org.bstats:bstats-velocity", version.ref = "bstats" }
 bstats-bungeecord = { module = "org.bstats:bstats-bungeecord", version.ref = "bstats" }
 faststats-core = { module = "dev.faststats.metrics:core", version.ref = "faststats" }
+faststats-config = { module = "dev.faststats.metrics:config", version.ref = "faststats" }
 faststats-velocity = { module = "dev.faststats.metrics:velocity", version.ref = "faststats" }
 faststats-bungeecord = { module = "dev.faststats.metrics:bungeecord", version.ref = "faststats" }
 gson = { module = "com.google.code.gson:gson", version.ref = "gson" }
