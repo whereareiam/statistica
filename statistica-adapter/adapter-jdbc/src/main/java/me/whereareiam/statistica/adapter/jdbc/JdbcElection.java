@@ -9,6 +9,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Duration;
 import java.util.Objects;
@@ -24,8 +25,9 @@ import javax.sql.DataSource;
  * hold it at once. When the holder stops, it gives the lease up; when it dies, another instance
  * takes over once the lease expires. A database only one instance uses always elects it.
  * <p>
- * The table belongs to the application's migrations. {@link #schema(String)} declares it as a
- * Strata stream of its own, to be run with the application's other streams:
+ * The table belongs to the application's migrations. With Strata's database adapter on the
+ * classpath, {@link #schema(String)} declares it as a stream of its own, to be run with the
+ * application's other streams; other migration tools run {@link #createTableStatement()}:
  *
  * <pre>{@code
  * JdbcElection election = JdbcElection.of(dataSource, "myplugin_statistica_lease");
@@ -118,16 +120,12 @@ public final class JdbcElection implements Election {
 	@Override
 	public boolean elected() throws SQLException {
 		long now = System.currentTimeMillis();
-		String sql = "UPDATE " + table + " SET holder = ?, expires_at = ? WHERE id = 1 AND (holder = ? OR expires_at < ?)";
 
-		try (Connection connection = dataSource.getConnection();
-			 PreparedStatement statement = connection.prepareStatement(sql)) {
-			statement.setString(1, holder);
-			statement.setLong(2, now + leaseMillis);
-			statement.setString(3, holder);
-			statement.setLong(4, now);
+		try (Connection connection = dataSource.getConnection()) {
+			if (claim(connection, now)) return true;
+			if (exists(connection)) return false;
 
-			return statement.executeUpdate() == 1;
+			return insert(connection, now);
 		}
 	}
 
@@ -142,11 +140,60 @@ public final class JdbcElection implements Election {
 		}
 	}
 
-	private void create(@NotNull DatabaseContext database) throws SQLException {
-		database.execute("CREATE TABLE " + table + " ("
+	/**
+	 * Returns the statement that creates the lease table, for an application whose migrations are not
+	 * Strata streams. The lease row is added by the first election.
+	 *
+	 * @return a {@code CREATE TABLE} statement every supported database runs
+	 */
+	public @NotNull String createTableStatement() {
+		return "CREATE TABLE " + table + " ("
 				+ "id INT NOT NULL PRIMARY KEY, "
 				+ "holder VARCHAR(36) NOT NULL, "
-				+ "expires_at BIGINT NOT NULL)");
-		database.update("INSERT INTO " + table + " (id, holder, expires_at) VALUES (1, '', 0)");
+				+ "expires_at BIGINT NOT NULL)";
+	}
+
+	private boolean claim(@NotNull Connection connection, long now) throws SQLException {
+		String sql = "UPDATE " + table + " SET holder = ?, expires_at = ? WHERE id = 1 AND (holder = ? OR expires_at < ?)";
+
+		try (PreparedStatement statement = connection.prepareStatement(sql)) {
+			statement.setString(1, holder);
+			statement.setLong(2, now + leaseMillis);
+			statement.setString(3, holder);
+			statement.setLong(4, now);
+
+			return statement.executeUpdate() == 1;
+		}
+	}
+
+	private boolean exists(@NotNull Connection connection) throws SQLException {
+		try (PreparedStatement statement = connection.prepareStatement("SELECT 1 FROM " + table + " WHERE id = 1");
+			 ResultSet result = statement.executeQuery()) {
+			return result.next();
+		}
+	}
+
+	/**
+	 * Adds the lease row held by this instance. When another instance added it first, the insert
+	 * fails on the primary key, which every database reports differently, so the row is looked for
+	 * again instead.
+	 */
+	private boolean insert(@NotNull Connection connection, long now) throws SQLException {
+		String sql = "INSERT INTO " + table + " (id, holder, expires_at) VALUES (1, ?, ?)";
+
+		try (PreparedStatement statement = connection.prepareStatement(sql)) {
+			statement.setString(1, holder);
+			statement.setLong(2, now + leaseMillis);
+
+			return statement.executeUpdate() == 1;
+		} catch (SQLException failure) {
+			if (exists(connection)) return false;
+
+			throw failure;
+		}
+	}
+
+	private void create(@NotNull DatabaseContext database) throws SQLException {
+		database.execute(createTableStatement());
 	}
 }

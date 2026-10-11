@@ -9,6 +9,8 @@ import org.sqlite.SQLiteDataSource;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.sql.Connection;
+import java.sql.Statement;
 import java.time.Duration;
 import java.util.List;
 import java.util.UUID;
@@ -55,6 +57,19 @@ class JdbcElectionTest {
 		Thread.sleep(5);
 
 		assertTrue(second.elected());
+	}
+
+	@ParameterizedTest
+	@MethodSource("databases")
+	void addsTheLeaseRowOnTheFirstElection(DataSource database) throws Exception {
+		JdbcElection first = JdbcElection.of(database, TABLE);
+		try (Connection connection = database.getConnection(); Statement statement = connection.createStatement()) {
+			statement.execute(first.createTableStatement());
+		}
+		JdbcElection second = JdbcElection.of(database, TABLE);
+
+		assertTrue(first.elected());
+		assertFalse(second.elected());
 	}
 
 	private static JdbcElection migrated(DataSource database, JdbcElection election) {

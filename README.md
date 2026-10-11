@@ -32,7 +32,7 @@ dependencies {
 | --- | --- |
 | `statistica-platform-velocity` | Velocity plugins |
 | `statistica-platform-bungeecord` | BungeeCord and Waterfall plugins |
-| `statistica-adapter-jdbc` | electing through a database, with its table as a Strata stream |
+| `statistica-adapter-jdbc` | electing through a database |
 | `statistica-adapter-redis` | electing through Redis, with the plugin's Jedis |
 
 A capability pulls in that service's library; without it the service's code is never loaded. Shade and
@@ -96,9 +96,11 @@ new Strata(List.of(pluginDatabase, election.schema("my-plugin/statistica"))).mig
 builder.election(election);
 ```
 
-The election is a lease in one row: the holder renews it, gives it up when it stops, and another instance
-takes it over when it expires. Elect through the store the totals come from. Without an election every
-instance is elected, which is right for one that shares nothing.
+`schema` needs `strata-adapter-database` on the classpath; with another migration tool, create the table
+with `election.createTableStatement()`. The election is a lease in one row, added by the first election: the
+holder renews it, gives it up when it stops, and another instance takes it over when it expires. Elect
+through the store the totals come from. Without an election every instance is elected, which is right for
+one that shares nothing.
 
 ## Report errors
 
