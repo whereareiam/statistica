@@ -1,5 +1,5 @@
 [versions]
-lombok = "1.18.42"
+lombok = "1.18.48"
 annotations = "26.1.0"
 junit = "6.0.1"
 bstats = "3.2.1"
