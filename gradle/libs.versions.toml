@@ -1,0 +1,39 @@
+[versions]
+lombok = "1.18.42"
+annotations = "26.1.0"
+junit = "6.0.1"
+bstats = "3.2.1"
+faststats = "0.30.2"
+gson = "2.14.0"
+jedis = "7.0.0"
+strata = "3.0.0"
+velocity = "3.5.0-SNAPSHOT"
+bungeecord = "26.1-R0.1-SNAPSHOT"
+guice = "7.0.0"
+h2 = "2.4.240"
+sqlite = "3.50.3.0"
+testcontainers = "2.0.2"
+testcontainers-redis = "2.2.4"
+
+[libraries]
+lombok = { module = "org.projectlombok:lombok", version.ref = "lombok" }
+annotations = { module = "org.jetbrains:annotations", version.ref = "annotations" }
+junit = { module = "org.junit.jupiter:junit-jupiter", version.ref = "junit" }
+junit-launcher = { module = "org.junit.platform:junit-platform-launcher", version.ref = "junit" }
+bstats-base = { module = "org.bstats:bstats-base", version.ref = "bstats" }
+bstats-velocity = { module = "org.bstats:bstats-velocity", version.ref = "bstats" }
+bstats-bungeecord = { module = "org.bstats:bstats-bungeecord", version.ref = "bstats" }
+faststats-core = { module = "dev.faststats.metrics:core", version.ref = "faststats" }
+faststats-velocity = { module = "dev.faststats.metrics:velocity", version.ref = "faststats" }
+faststats-bungeecord = { module = "dev.faststats.metrics:bungeecord", version.ref = "faststats" }
+gson = { module = "com.google.code.gson:gson", version.ref = "gson" }
+jedis = { module = "redis.clients:jedis", version.ref = "jedis" }
+strata = { module = "me.whereareiam:strata", version.ref = "strata" }
+strata-adapter-database = { module = "me.whereareiam:strata-adapter-database", version.ref = "strata" }
+velocity = { module = "com.velocitypowered:velocity-api", version.ref = "velocity" }
+bungeecord = { module = "net.md-5:bungeecord-api", version.ref = "bungeecord" }
+guice = { module = "com.google.inject:guice", version.ref = "guice" }
+h2 = { module = "com.h2database:h2", version.ref = "h2" }
+sqlite = { module = "org.xerial:sqlite-jdbc", version.ref = "sqlite" }
+testcontainers-junit = { module = "org.testcontainers:testcontainers-junit-jupiter", version.ref = "testcontainers" }
+testcontainers-redis = { module = "com.redis:testcontainers-redis", version.ref = "testcontainers-redis" }
