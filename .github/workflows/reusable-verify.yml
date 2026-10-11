@@ -78,7 +78,7 @@ jobs:
 
       - name: Upload jars
         if: inputs.artifacts
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: statistica-${{ steps.identity.outputs.version }}
           # Gradle's own build-logic jar is not part of Statistica.
