@@ -11,7 +11,7 @@ velocity = "3.5.0-SNAPSHOT"
 bungeecord = "26.1-R0.1-SNAPSHOT"
 guice = "7.0.0"
 h2 = "2.4.240"
-sqlite = "3.50.3.0"
+sqlite = "3.53.4.0"
 testcontainers = "2.0.2"
 testcontainers-redis = "2.2.4"
 
