@@ -81,7 +81,10 @@ jobs:
         uses: actions/upload-artifact@v6
         with:
           name: statistica-${{ steps.identity.outputs.version }}
-          path: "**/build/libs/*.jar"
+          # Gradle's own build-logic jar is not part of Statistica.
+          path: |
+            **/build/libs/*.jar
+            !build-logic/**
           if-no-files-found: error
           compression-level: 0
           retention-days: 14
