@@ -13,7 +13,7 @@ guice = "7.0.0"
 h2 = "2.4.240"
 sqlite = "3.50.3.0"
 testcontainers = "2.0.2"
-testcontainers-redis = "2.2.4"
+testcontainers-redis = "3.0.1"
 
 [libraries]
 lombok = { module = "org.projectlombok:lombok", version.ref = "lombok" }
